@@ -12,9 +12,11 @@ class BFS(SearchBasic):
         super().__init__(LinkedListFIFO)
 
 class Dijkstra(SearchBasic):
-    def __init__(self, weightFun) -> None:
+    def __init__(self, weightFun = None) -> None:
         super().__init__(PythonHeap(), weightFun)
 
 class AStart(SearchBasic):
-    def __init__(self, weightFun, heuristicFunc) -> None:
-        super().__init__(PythonHeap(), weightFun, heuristicFunc)
+    def __init__(self, weightFun = None, heuristicFunc = None) -> None:
+        heap = PythonHeap()
+        heap.func = lambda x : x.weight
+        super().__init__(heap, weightFun, heuristicFunc)

@@ -10,7 +10,7 @@ class Item:
         return self.t.__getitem__(index)
 
     def __lt__(self,other):
-       return -(other[0]-self[0])
+       return self.priority < other.priority
 
 class PythonHeap:
     def __init__(self) -> None:
@@ -21,11 +21,11 @@ class PythonHeap:
     def empty(self):
         return not any(self.heap)
 
-    def append (self, value):
-        return heapq.heappush(self.heap, Item((self.func(value), value)))
+    def append (self, priority, value):
+        return heapq.heappush(self.heap, Item((priority, value)))
 
     def pop(self):
-        return heapq.heappop(self.heap)[1]
+        return heapq.heappop(self.heap)
     
     def set_cmp_func(self, func):
         self.func = func

@@ -1,25 +1,35 @@
-class ItemSearch:
-    def __init__(self, weight, node) -> None:
-        self.weight = weight
-        self.node = node
-
 class SearchBasic:
     def __init__(self, data_struct, weightFunc = None, heuristicFunc = None) -> None:
         self.data_struct = data_struct
-        self.weightFunc = weightFunc if not weightFunc is None else lambda x, y: x.weight + 1
+        self.weightFunc = weightFunc if not weightFunc is None else lambda x, y: 1
         self.heuristicFunc = heuristicFunc if not heuristicFunc is None else lambda x : 0
 
     def find(self, start, objectiveFunc, adjFunc): 
-        self.data_struct.append(ItemSearch(0, start))
+        self.data_struct.append(0, start)
+        self.heuristicValue = {start: 0}
+        self.parent = {start: None}
 
         self.expanded = 0
         while not self.data_struct.empty:
-            expanded_node = self.data_struct.pop()
-            self.expanded += 1
+            cost, node = self.data_struct.pop()
+            if cost != 2047: 
+                print("es aqui")
+            if objectiveFunc(node): return node
 
-            if objectiveFunc(expanded_node): return expanded_node
-
-            for adj in adjFunc(expanded_node):
-                self.data_struct.append(ItemSearch(self.weightFunc(expanded_node, adj) + self.heuristicFunc(adj), adj))
+            for adj in adjFunc(node):
+                self.heuristicValue[adj] = self.heuristicFunc(adj)
+                self.data_struct.append(
+                    cost - self.heuristicValue[node] + self.weightFunc(node, adj) + self.heuristicValue[adj] 
+                    , adj)
+                self.parent[adj] = node
+                self.expanded += 1
         
         return None
+
+    def map_parent(self, node, func = lambda x, y: x.insect(0, y), default = []):
+        result = default
+        while not node is None:
+            result = func(result, node)
+            node = self.parent[node]
+        
+        return result

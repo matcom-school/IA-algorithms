@@ -12,16 +12,13 @@ class SearchBasic:
         self.expanded = 0
         while not self.data_struct.empty:
             cost, node = self.data_struct.pop()
-            if cost != 2047: 
-                print("es aqui")
             if objectiveFunc(node): return node
 
             for adj in adjFunc(node):
                 self.heuristicValue[adj] = self.heuristicFunc(adj)
-                self.data_struct.append(
-                    cost - self.heuristicValue[node] + self.weightFunc(node, adj) + self.heuristicValue[adj] 
-                    , adj)
-                self.parent[adj] = node
+                cost = cost - self.heuristicValue[node] + self.weightFunc(node, adj) 
+                self.data_struct.append(cost + self.heuristicValue[adj], adj)
+                self.parent[adj] = (node, cost)
                 self.expanded += 1
         
         return None

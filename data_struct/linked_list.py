@@ -13,11 +13,10 @@ class LinkedList:
     def empty(self):
         return self.last is None or self.firths is None
 
-    def append(self, value):
-        node = Node(value, self.firths)
-        if self.firths is None: self.firths = node
-        else: self.firths.next = node
-
+    def append(self, p, value):
+        node = Node((p, value), self.last)
+        if self.firths is None: self.firths = self.last = node
+        self.last.next = node
         self.last = node
 
 class LinkedListLIFO(LinkedList):
@@ -30,5 +29,5 @@ class LinkedListLIFO(LinkedList):
 class LinkedListFIFO(LinkedList):
     def pop(self):
         value = self.firths.value
-        self.firths = self.firths.previous
+        self.firths = self.firths.next
         return value

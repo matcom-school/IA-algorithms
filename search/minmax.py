@@ -1,4 +1,3 @@
-from multiprocessing.dummy import Array
 from tools.tools import oo
 from data_struct.heap import PythonHeap
 

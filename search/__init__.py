@@ -1,7 +1,7 @@
 import imp
-from search.search_basic import SearchBasic
-from data_struct.linked_list import LinkedListFIFO, LinkedListLIFO
-from data_struct.heap import PythonHeap
+from .search_basic import SearchBasic
+from ..data_struct.linked_list import LinkedListFIFO, LinkedListLIFO
+from ..data_struct.heap import PythonHeap
 
 class DFS(SearchBasic): 
     def __init__(self) -> None:

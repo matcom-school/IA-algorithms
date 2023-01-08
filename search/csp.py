@@ -4,7 +4,7 @@ import copy
 class AssignationError(Exception):
     pass
 
-class CspDomain(Protocol):
+class CspDomain:
     @property
     def root(self):
         pass
@@ -17,6 +17,9 @@ class CspDomain(Protocol):
     
     def validate(self, node_a, value_a, node_b, value_b) -> bool:
         pass
+
+    def assign_callback(self, value, current_domains):
+        return current_domains
 
     def callback(self, assignation):
         pass
@@ -33,14 +36,13 @@ class SearchState:
 
     @property
     def is_finished(self) -> bool:
-        return self.n == self.step
+        return all(map(lambda x:len(x) == 1, self.n_domains))
 
-    def assign(self, var, value):
+    def __copy__(self):
         new_domains = [None] * self.n
         
         for i in range(self.n):
-            new_domains[i] = copy(self.n_domains[i])
-        new_domains[var] = [value]
+            new_domains[i] = copy.copy(self.n_domains[i])
 
         return SearchState(self.n, new_domains, self.step + 1)    
 
@@ -48,23 +50,24 @@ class BacktrackingSearch:
     def __init__(self, n, domain: CspDomain) -> None:
         self.problem_domain = domain
         self.first_state = SearchState(
-            n, [self.problem_domain.domain_of(i) for i in range(n)], 
+            n, [list(self.problem_domain.domain_of(i)) for i in range(n)], 
         )
 
     def __compute_new_domain_for_edge(self, a, b, state: SearchState):
-        new_domain = []
+        new_domain = copy.deepcopy(state.n_domains[b])
         for b_values in state.n_domains[b]:
             for a_values in state.n_domains[a]:
-                if not self.problem_domain.validate(a, a_values, b, b_values):
+                if self.problem_domain.validate(a, a_values, b, b_values):
                     break
             else:
-                new_domain.append(b_values)
+                new_domain.remove(b_values)
 
         return new_domain
 
     def __assign(self, var, value, state: SearchState) -> CspDomain:
-        new_state = state.assign(var, value)
-
+        new_state = copy.copy(state)
+        new_state.n_domains = self.problem_domain.assign_callback(value, new_state.n_domains)
+        new_state.n_domains[var] = [value]
         # constraint propagation 
         # edges consistence 
         Q = [var]
@@ -73,11 +76,11 @@ class BacktrackingSearch:
             for adj_node in self.problem_domain.adj_nodes(v):
                 domain = new_state.n_domains[adj_node]
                 new_domain = self.__compute_new_domain_for_edge(v, adj_node, new_state)
-                if len(new_state) == 0: 
+                if len(new_domain) == 0: 
                     raise AssignationError
                 if len(domain) != len(new_domain):
                     new_state.n_domains[adj_node] = new_domain
-                    Q.append(adj_node)
+                    if not adj_node in Q: Q.append(adj_node)
 
         return new_state
     
@@ -86,13 +89,13 @@ class BacktrackingSearch:
         for i, domains in enumerate(problem_state.n_domains):
             if len(domains) < pivot and len(domains) != 1:
                 pivot, index = len(domains), i
-
-        assert not index is None
+        if index is None:
+            assert not index is None
         return index 
     
     def __sorted_values(self, var, problem_state: SearchState):
         saved_domain = problem_state.n_domains[var]
-        pd = [None] * problem_state.n
+        pd = [None] * len(saved_domain)
         
         for i, value in enumerate(saved_domain):
             problem_state.n_domains[var] = [value]
@@ -103,7 +106,7 @@ class BacktrackingSearch:
             
             pd[i] = (value, s)
         
-
+        problem_state.n_domains[var] = saved_domain
         pd.sort(key=lambda x: x[1])
         for value, _ in pd:
             yield value
@@ -114,17 +117,20 @@ class BacktrackingSearch:
         except AttributeError:
             root = self.__select_var_to_assign(self.problem_domain)
         
-        for value in self.first_state.domains[root]:
-            self.__find(self.__assign(root, value, self.first_state))
+        for value in self.first_state.n_domains[root]:
+            try:
+                self.__find(self.__assign(root, value, self.first_state))
+            except AssignationError:
+                pass
 
     def __find(self, problem_state):
         if problem_state.is_finished:
-            self.problem_domain.callback(problem_state.assignation)
+            return self.problem_domain.callback(problem_state.assignation)
 
         var = self.__select_var_to_assign(problem_state)
         for value in self.__sorted_values(var, problem_state):
             try:
-                next_state = self.__assign(var, value)
+                next_state = self.__assign(var, value, problem_state)
                 self.__find(next_state)
             except AssignationError:
                 pass
